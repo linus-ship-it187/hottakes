@@ -3,132 +3,256 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hot Takes</title>
+<title>HOT TAKES</title>
+
 <style>
-*{box-sizing:border-box}
-body{
- margin:0;min-height:100vh;background:#101116;color:white;
- font-family:Arial,sans-serif;display:grid;place-items:center;padding:20px
+* {
+  box-sizing: border-box;
 }
-main{width:min(700px,100%);text-align:center}
-h1{font-size:3rem}
-.take{
- background:#1c1c25;border:2px solid #333;
- border-radius:25px;padding:35px 20px;
- font-size:2rem;font-weight:bold;min-height:150px;
- display:grid;place-items:center;transition:.3s
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #1557e8;
+  color: white;
+  font-family: Arial, sans-serif;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  transition: background 0.25s ease;
 }
-.buttons{display:flex;gap:15px;margin-top:20px}
-button{
- flex:1;padding:18px;border:0;border-radius:15px;
- font-size:1.2rem;font-weight:bold;color:white;cursor:pointer
+
+body.approved {
+  background: #16a34a;
 }
-#yes{background:#16a34a}
-#no{background:#dc2626}
-button:disabled{opacity:.5}
-#status{margin:20px;color:#aaa}
-a{color:#aaa}
+
+body.rejected {
+  background: #dc2626;
+}
+
+main {
+  width: min(750px, 100%);
+  text-align: center;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 900;
+  margin-bottom: 40px;
+  color: white;
+}
+
+.take {
+  background: rgba(0,0,0,0.16);
+  border: 3px solid rgba(255,255,255,0.7);
+  border-radius: 25px;
+  padding: 45px 25px;
+  min-height: 190px;
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.5rem, 5vw, 2.8rem);
+  font-weight: bold;
+  color: white;
+  transition: 0.25s;
+  overflow-wrap: anywhere;
+}
+
+.buttons {
+  display: flex;
+  gap: 18px;
+  margin-top: 30px;
+}
+
+button {
+  flex: 1;
+  padding: 22px 12px;
+  border: 3px solid white;
+  border-radius: 18px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  cursor: pointer;
+  color: white;
+  background: transparent;
+  transition: 0.2s;
+}
+
+button:hover:not(:disabled) {
+  background: rgba(255,255,255,0.2);
+  transform: scale(1.03);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#status {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: white;
+  min-height: 30px;
+  margin-top: 25px;
+}
+
+a {
+  display: inline-block;
+  margin-top: 20px;
+  color: white;
+  font-weight: bold;
+}
+
+@media(max-width: 500px) {
+  .buttons {
+    flex-direction: column;
+  }
+}
 </style>
 </head>
+
 <body>
+
 <main>
+
 <h1>🔥 HOT TAKES</h1>
-<div class="take" id="take">Loading...</div>
-<div class="buttons">
-<button id="yes">✓ Approved</button>
-<button id="no">✕ Not Approved</button>
+
+<div class="take" id="take">
+Loading...
 </div>
+
+<div class="buttons">
+
+<button id="yes">
+✓ APPROVED
+</button>
+
+<button id="no">
+✕ NOT APPROVED
+</button>
+
+</div>
+
 <p id="status"></p>
+
 <a href="submit.html">Submit a Hot Take</a>
+
 </main>
 
 <script type="module">
+
 import { createClient } from
 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const SUPABASE_URL = 'https://yopideifgsofeqqrsrnw.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_buVUeBYD9dd2-2bS4ZKhyg_c2SezwVu';
+const SUPABASE_URL =
+'https://yopideifgsofeqqrsrnw.supabase.co';
 
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_KEY =
+'sb_publishable_buVUeBYD9dd2-2bS4ZKhyg_c2SezwVu';
+
+const db = createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
 const takeEl = document.getElementById('take');
 const statusEl = document.getElementById('status');
+
 const yes = document.getElementById('yes');
 const no = document.getElementById('no');
 
 let current = null;
 let busy = false;
 
-function buttonsOff(value){
+function buttonsOff(value) {
   yes.disabled = value;
   no.disabled = value;
 }
 
-async function nextTake(){
-  takeEl.style.background = '#1c1c25';
-  takeEl.style.borderColor = '#333';
-  statusEl.textContent = '';
+async function nextTake() {
 
-  const {data,error} = await db
+  document.body.className = '';
+
+  statusEl.textContent = '';
+  takeEl.textContent = 'Loading...';
+
+  buttonsOff(true);
+
+  const { data, error } = await db
     .from('hot_takes')
     .select('*')
-    .eq('status','pending')
-    .order('created_at',{ascending:true})
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
     .limit(1);
 
-  if(error){
+  if (error) {
     takeEl.textContent = 'Database error';
     statusEl.textContent = error.message;
+    current = null;
     return;
   }
 
   current = data?.[0] || null;
 
-  if(!current){
+  if (!current) {
     takeEl.textContent = 'No Hot Takes right now!';
-    buttonsOff(true);
+    statusEl.textContent = 'Waiting for new Hot Takes...';
     return;
   }
 
   takeEl.textContent = current.text;
+
   buttonsOff(false);
 }
 
-async function vote(approved){
-  if(!current || busy) return;
+async function vote(approved) {
+
+  if (!current || busy) return;
+
   busy = true;
   buttonsOff(true);
 
-  takeEl.style.background = approved ? '#166534' : '#991b1b';
-  takeEl.style.borderColor = approved ? '#22c55e' : '#ef4444';
-  statusEl.textContent = approved ? 'Approved!' : 'Not Approved!';
+  document.body.className =
+    approved ? 'approved' : 'rejected';
 
-  const {error} = await db
+  statusEl.textContent =
+    approved ? '✓ APPROVED!' : '✕ NOT APPROVED!';
+
+  const { error } = await db
     .from('hot_takes')
-    .update({status:approved?'approved':'rejected'})
-    .eq('id',current.id);
+    .update({
+      status: approved ? 'approved' : 'rejected'
+    })
+    .eq('id', current.id)
+    .eq('status', 'pending');
 
-  if(error){
-    statusEl.textContent = error.message;
-    takeEl.style.background = '#1c1c25';
-    takeEl.style.borderColor = '#333';
+  if (error) {
+
+    document.body.className = '';
+
+    statusEl.textContent =
+      'Error: ' + error.message;
+
     buttonsOff(false);
     busy = false;
+
     return;
   }
 
   current = null;
 
-  setTimeout(async()=>{
+  setTimeout(async () => {
     await nextTake();
     busy = false;
-  },700);
+  }, 900);
 }
 
-yes.addEventListener('click',()=>vote(true));
-no.addEventListener('click',()=>vote(false));
+yes.addEventListener('click', () => vote(true));
+
+no.addEventListener('click', () => vote(false));
 
 nextTake();
+
 </script>
+
 </body>
 </html>
+
