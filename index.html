@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hot Takes</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;min-height:100vh;background:#101116;color:white;
+ font-family:Arial,sans-serif;display:grid;place-items:center;padding:20px
+}
+main{width:min(700px,100%);text-align:center}
+h1{font-size:3rem}
+.take{
+ background:#1c1c25;border:2px solid #333;
+ border-radius:25px;padding:35px 20px;
+ font-size:2rem;font-weight:bold;min-height:150px;
+ display:grid;place-items:center;transition:.3s
+}
+.buttons{display:flex;gap:15px;margin-top:20px}
+button{
+ flex:1;padding:18px;border:0;border-radius:15px;
+ font-size:1.2rem;font-weight:bold;color:white;cursor:pointer
+}
+#yes{background:#16a34a}
+#no{background:#dc2626}
+button:disabled{opacity:.5}
+#status{margin:20px;color:#aaa}
+a{color:#aaa}
+</style>
+</head>
+<body>
+<main>
+<h1>🔥 HOT TAKES</h1>
+<div class="take" id="take">Loading...</div>
+<div class="buttons">
+<button id="yes">✓ Approved</button>
+<button id="no">✕ Not Approved</button>
+</div>
+<p id="status"></p>
+<a href="submit.html">Submit a Hot Take</a>
+</main>
+
+<script type="module">
+import { createClient } from
+'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://yopideifgsofeqqrsrnw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_buVUeBYD9dd2-2bS4ZKhyg_c2SezwVu';
+
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const takeEl = document.getElementById('take');
+const statusEl = document.getElementById('status');
+const yes = document.getElementById('yes');
+const no = document.getElementById('no');
+
+let current = null;
+let busy = false;
+
+function buttonsOff(value){
+  yes.disabled = value;
+  no.disabled = value;
+}
+
+async function nextTake(){
+  takeEl.style.background = '#1c1c25';
+  takeEl.style.borderColor = '#333';
+  statusEl.textContent = '';
+
+  const {data,error} = await db
+    .from('hot_takes')
+    .select('*')
+    .eq('status','pending')
+    .order('created_at',{ascending:true})
+    .limit(1);
+
+  if(error){
+    takeEl.textContent = 'Database error';
+    statusEl.textContent = error.message;
+    return;
+  }
+
+  current = data?.[0] || null;
+
+  if(!current){
+    takeEl.textContent = 'No Hot Takes right now!';
+    buttonsOff(true);
+    return;
+  }
+
+  takeEl.textContent = current.text;
+  buttonsOff(false);
+}
+
+async function vote(approved){
+  if(!current || busy) return;
+  busy = true;
+  buttonsOff(true);
+
+  takeEl.style.background = approved ? '#166534' : '#991b1b';
+  takeEl.style.borderColor = approved ? '#22c55e' : '#ef4444';
+  statusEl.textContent = approved ? 'Approved!' : 'Not Approved!';
+
+  const {error} = await db
+    .from('hot_takes')
+    .update({status:approved?'approved':'rejected'})
+    .eq('id',current.id);
+
+  if(error){
+    statusEl.textContent = error.message;
+    takeEl.style.background = '#1c1c25';
+    takeEl.style.borderColor = '#333';
+    buttonsOff(false);
+    busy = false;
+    return;
+  }
+
+  current = null;
+
+  setTimeout(async()=>{
+    await nextTake();
+    busy = false;
+  },700);
+}
+
+yes.addEventListener('click',()=>vote(true));
+no.addEventListener('click',()=>vote(false));
+
+nextTake();
+</script>
+</body>
+</html>
