@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Submit Hot Takes</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;min-height:100vh;background:#101116;color:white;
+ font-family:Arial,sans-serif;display:grid;place-items:center;padding:20px
+}
+main{
+ width:min(600px,100%);background:#1c1c25;
+ padding:30px;border-radius:25px;border:1px solid #333
+}
+h1{font-size:2.5rem}
+textarea{
+ width:100%;height:150px;padding:15px;
+ border-radius:12px;border:1px solid #555;
+ background:#101116;color:white;font-size:1.1rem
+}
+button{
+ width:100%;padding:18px;margin-top:15px;
+ border:0;border-radius:12px;background:#6366f1;
+ color:white;font-weight:bold;font-size:1.1rem;cursor:pointer
+}
+a{color:#aaa}
+#status{min-height:25px}
+</style>
+</head>
+<body>
+<main>
+<h1>🔥 Submit a Hot Take</h1>
+<p>Write your controversial opinion!</p>
+
+<textarea id="text" maxlength="240"
+placeholder="Write your Hot Take here..."></textarea>
+
+<button id="send">Submit</button>
+<p id="status"></p>
+<a href="index.html">Back to Player</a>
+</main>
+
+<script type="module">
+import { createClient } from
+'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://yopideifgsofeqqrsrnw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_buVUeBYD9dd2-2bS4ZKhyg_c2SezwVu';
+
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const field = document.getElementById('text');
+const button = document.getElementById('send');
+const status = document.getElementById('status');
+
+button.addEventListener('click',async()=>{
+  const text = field.value.trim();
+
+  if(!text){
+    status.textContent = 'Write something first!';
+    return;
+  }
+
+  button.disabled = true;
+  status.textContent = 'Sending...';
+
+  const {error} = await db
+    .from('hot_takes')
+    .insert({text:text,status:'pending'});
+
+  button.disabled = false;
+
+  if(error){
+    status.textContent = 'Error: ' + error.message;
+    return;
+  }
+
+  field.value = '';
+  status.textContent = 'Hot Take submitted! 🔥';
+});
+</script>
+</body>
+</html>
